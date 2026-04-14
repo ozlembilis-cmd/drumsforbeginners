@@ -21,8 +21,43 @@
             <div id="statusBar" class="status-bar">
                 <p id="cameraStatus">Press Start once to allow camera and sound.</p>
             </div>
-            <button id="bootButton" class="boot-button">Start</button>
+            <button id="bootButton" class="boot-button hidden">Start</button>
+            <button id="resetSetupBtn" class="reset-setup-btn hidden" title="Back to setup">⚙</button>
+
+            <!-- Setup modal: asks if user has a real drum kit -->
+            <div id="setupModal" class="setup-modal">
+                <div class="setup-card">
+                    <h2>Welcome to Air Drums</h2>
+                    <p>Do you have a real drum kit in front of you?</p>
+                    <div class="setup-buttons">
+                        <button id="setupNo" class="setup-btn setup-btn--no">
+                            <span class="setup-btn__icon">🙅</span>
+                            <span class="setup-btn__label">No, just me</span>
+                            <span class="setup-btn__desc">Use default pad positions</span>
+                        </button>
+                        <button id="setupYes" class="setup-btn setup-btn--yes">
+                            <span class="setup-btn__icon">🥁</span>
+                            <span class="setup-btn__label">Yes, I have drums</span>
+                            <span class="setup-btn__desc">Position pads on your kit</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calibration overlay: drag pads onto real drums -->
+            <div id="calibrationOverlay" class="calibration-overlay hidden">
+                <div class="calibration-header">
+                    <p>Drag each pad to match your drum positions, then press Done</p>
+                    <button id="calibrationDone" class="calibration-done-btn">Done</button>
+                </div>
+            </div>
             <div id="countdownOverlay" class="countdown-overlay hidden" aria-live="polite"></div>
+
+            <!-- Spotify player -->
+            <div id="spotifyDock" class="spotify-dock hidden">
+                <div id="spotifyPlayer"></div>
+                <button id="spotifyClose" class="spotify-close-btn" title="Hide player">&times;</button>
+            </div>
 
             <section class="rail-dock">
                 <div class="rail-controls">

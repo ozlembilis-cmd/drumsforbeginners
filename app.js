@@ -1,14 +1,19 @@
-// ─── Fixed drum kit layout ──────────────────────────────────
+// ─── Drum kit layout ────────────────────────────────────────
 // Positions are fractions of screen width/height.
-// Kit mirrors a real overhead view: hi-hat left, crash right-high,
+// "Default" mirrors a real overhead view: hi-hat left, crash right-high,
 // snare front-center-left, toms center, floor tom far right.
-const DRUM_KIT = [
+// These can be repositioned by the user in calibration mode.
+
+const DEFAULT_KIT_POSITIONS = [
     { name: "hihat",  label: "Hi-hat", x: 0.20, y: 0.34, radius: 0.10, color: "#6ab5d1" },
     { name: "crash",  label: "Crash",  x: 0.80, y: 0.28, radius: 0.10, color: "#d16ac4" },
     { name: "snare",  label: "Snare",  x: 0.33, y: 0.58, radius: 0.11, color: "#d1b06a" },
     { name: "tom",    label: "Tom",    x: 0.52, y: 0.44, radius: 0.10, color: "#6ad17a" },
     { name: "floor",  label: "Floor",  x: 0.73, y: 0.62, radius: 0.11, color: "#d19a6a" }
 ];
+
+// Mutable kit — gets updated if user calibrates
+const DRUM_KIT = DEFAULT_KIT_POSITIONS.map(d => ({ ...d }));
 
 const DRUM_COLORS = {};
 const DRUM_LABELS = {};
@@ -32,17 +37,96 @@ const STICK_WIDTH = 5;
 // ─── Song Library ───────────────────────────────────────────
 
 // Notes use [beat, drum, hand] format. Beat is absolute position.
-// Multiple notes at the same beat = simultaneous onset.
-// Duration is derived as time until the next note on the same drum, or 1 beat.
+// Each bar = 8 beat positions (eighth notes in 4/4 time).
+// tempo = eighth-note BPM (double the quarter-note BPM).
+// spotifyId is used to auto-load the Spotify player for real songs.
 const SONG_LIBRARY = {
+    // ── Real Songs ──────────────────────────────────────────
+    billie_jean: {
+        title: "Billie Jean",
+        composer: "Michael Jackson",
+        spotifyId: "5ChkMS8OtDnJGX3cRussID",
+        prompt: "Classic disco-pop groove. Steady hi-hat, snare on 2 & 4, kick on 1 & 3.",
+        tempo: 234,   // 117 BPM quarter note
+        totalBeats: 32,
+        notes: [
+            // 4 bars of the iconic groove
+            ...[0, 8, 16, 24].flatMap((b) => [
+                [b+0, "hihat", "L"], [b+0, "floor", "R"],
+                [b+1, "hihat", "L"],
+                [b+2, "hihat", "L"], [b+2, "snare", "L"],
+                [b+3, "hihat", "L"],
+                [b+4, "hihat", "L"], [b+4, "floor", "R"],
+                [b+5, "hihat", "L"],
+                [b+6, "hihat", "L"], [b+6, "snare", "L"],
+                [b+7, "hihat", "L"],
+            ]),
+        ]
+    },
+    back_in_black: {
+        title: "Back in Black",
+        composer: "AC/DC",
+        spotifyId: "08mG3Y1vljYA6bvDt4Wqkj",
+        prompt: "Hard rock groove. Double kick on beat 1, snare on 2 & 4. Hit it hard!",
+        tempo: 192,   // 96 BPM quarter note
+        totalBeats: 32,
+        notes: [
+            // 4 bars — double kick on 1, snare on 2 & 4
+            ...[0, 8, 16, 24].flatMap((b) => [
+                [b+0, "hihat", "L"], [b+0, "floor", "R"],
+                [b+1, "hihat", "L"], [b+1, "floor", "R"],
+                [b+2, "hihat", "L"], [b+2, "snare", "L"],
+                [b+3, "hihat", "L"],
+                [b+4, "hihat", "L"], [b+4, "floor", "R"],
+                [b+5, "hihat", "L"],
+                [b+6, "hihat", "L"], [b+6, "snare", "L"],
+                [b+7, "hihat", "L"],
+            ]),
+        ]
+    },
+    stay_with_me: {
+        title: "Stay With Me",
+        composer: "Sam Smith",
+        spotifyId: "5Nm9ERjJZ5oyfXZTECKmRt",
+        prompt: "Simple and soulful. Quarter-note hi-hat, kick on 1 & 3, snare on 2 & 4. Nice and easy.",
+        tempo: 168,   // 84 BPM quarter note
+        totalBeats: 32,
+        notes: [
+            // 4 bars — quarter note hi-hat (positions 0, 2, 4, 6), simple kick & snare
+            ...[0, 8, 16, 24].flatMap((b) => [
+                [b+0, "hihat", "L"], [b+0, "floor", "R"],
+                [b+2, "hihat", "L"], [b+2, "snare", "L"],
+                [b+4, "hihat", "L"], [b+4, "floor", "R"],
+                [b+6, "hihat", "L"], [b+6, "snare", "L"],
+            ]),
+        ]
+    },
+    seven_nation_army: {
+        title: "Seven Nation Army",
+        composer: "The White Stripes",
+        spotifyId: "7i2DJ88J4SnCmeTFcLMmQV",
+        prompt: "Meg White's raw, simple power. Crash on 1, snare on 2 & 4. Keep it primal!",
+        tempo: 248,   // 124 BPM quarter note
+        totalBeats: 32,
+        notes: [
+            // 4 bars — Meg White's minimalist style
+            ...[0, 8, 16, 24].flatMap((b) => [
+                [b+0, "floor", "R"], [b+0, "crash", "R"],
+                [b+2, "snare", "L"],
+                [b+4, "floor", "R"],
+                [b+6, "snare", "L"],
+            ]),
+        ]
+    },
+
+    // ── Practice Patterns ───────────────────────────────────
     basic_rock: {
-        title: "Basic rock",
-        composer: "Standard pattern",
+        title: "Basic Rock",
+        composer: "Practice pattern",
         prompt: "Swing your hands down onto the drum pads. Follow the colored highlights on the kit!",
         tempo: 100,
         totalBeats: 32,
         notes: [
-            // Bar 1-3: 8th-note hat, snare on 3 and 7
             ...[0, 8, 16].flatMap((bar) => [
                 [bar + 0, "hihat", "L"], [bar + 0, "floor", "R"],
                 [bar + 1, "hihat", "L"],
@@ -53,7 +137,6 @@ const SONG_LIBRARY = {
                 [bar + 6, "snare", "L"], [bar + 6, "hihat", "L"],
                 [bar + 7, "hihat", "L"],
             ]),
-            // Bar 4: fill
             [24, "hihat", "L"], [24, "floor", "R"],
             [25, "hihat", "L"],
             [26, "snare", "L"], [26.5, "snare", "L"],
@@ -62,48 +145,19 @@ const SONG_LIBRARY = {
             [30, "crash", "R"],
         ]
     },
-    steady_groove: {
-        title: "Steady groove",
-        composer: "Dance pattern",
-        prompt: "Alternate hi-hat and snare with tom accents. Keep it tight!",
-        tempo: 112,
-        totalBeats: 32,
-        notes: [
-            // Bars 1-3
-            ...[0, 8, 16].flatMap((bar) => [
-                [bar + 0, "hihat", "L"], [bar + 0, "tom", "R"],
-                [bar + 1, "hihat", "L"],
-                [bar + 2, "snare", "L"],
-                [bar + 3, "hihat", "L"],
-                [bar + 4, "hihat", "L"], [bar + 4, "tom", "R"],
-                [bar + 5, "hihat", "L"],
-                [bar + 6, "snare", "L"],
-                [bar + 7, "hihat", "L"],
-            ]),
-            // Bar 4: fill
-            [24, "hihat", "L"],
-            [25, "hihat", "L"],
-            [26, "snare", "L"], [26.5, "tom", "R"],
-            [27, "tom", "R"], [27.5, "floor", "R"],
-            [28, "floor", "R"],
-            [30, "crash", "R"],
-        ]
-    },
     half_time: {
-        title: "Half-time groove",
-        composer: "Hip-hop feel",
+        title: "Half-Time Groove",
+        composer: "Practice pattern",
         prompt: "Slow and heavy. Big space between the hits. Let them breathe.",
         tempo: 80,
         totalBeats: 32,
         notes: [
-            // Bars 1-3
             ...[0, 8, 16].flatMap((bar) => [
                 [bar + 0, "floor", "R"], [bar + 0, "hihat", "L"],
                 [bar + 2, "hihat", "L"],
                 [bar + 4, "snare", "L"], [bar + 4, "hihat", "L"],
                 [bar + 6, "hihat", "L"],
             ]),
-            // Bar 4: fill
             [24, "floor", "R"],
             [26, "snare", "L"], [27, "snare", "L"],
             [28, "tom", "R"], [29, "tom", "R"],
@@ -111,22 +165,6 @@ const SONG_LIBRARY = {
             [31, "crash", "R"],
         ]
     },
-    blast: {
-        title: "Blast beat",
-        composer: "Metal pattern",
-        prompt: "Fast alternating hits. Stay loose and let your wrists do the work.",
-        tempo: 160,
-        totalBeats: 18,
-        notes: [
-            // Alternating snare (L) and tom (R)
-            ...(Array.from({ length: 16 }, (_, i) => [
-                [i, i % 2 === 0 ? "snare" : "tom", i % 2 === 0 ? "L" : "R"]
-            ]).flat()),
-            // Fill
-            [16, "tom", "R"], [16.5, "tom", "R"],
-            [17, "floor", "R"], [17.5, "crash", "R"],
-        ]
-    }
 };
 
 // ─── DOM ────────────────────────────────────────────────────
@@ -140,7 +178,16 @@ const elements = {
     video: document.getElementById("video"),
     cameraStatus: document.getElementById("cameraStatus"),
     railViewport: document.getElementById("railViewport"),
-    railTrack: document.getElementById("railTrack")
+    railTrack: document.getElementById("railTrack"),
+    setupModal: document.getElementById("setupModal"),
+    setupYes: document.getElementById("setupYes"),
+    setupNo: document.getElementById("setupNo"),
+    calibrationOverlay: document.getElementById("calibrationOverlay"),
+    calibrationDone: document.getElementById("calibrationDone"),
+    resetSetupBtn: document.getElementById("resetSetupBtn"),
+    spotifyDock: document.getElementById("spotifyDock"),
+    spotifyPlayer: document.getElementById("spotifyPlayer"),
+    spotifyClose: document.getElementById("spotifyClose")
 };
 
 const trackingCtx = elements.trackingOverlay.getContext("2d");
@@ -165,7 +212,7 @@ const state = {
     lastBeatTick: -1,
     countdownToken: 0,
     countdownActive: false,
-    selectedSongId: "basic_rock",
+    selectedSongId: "billie_jean",
     currentPiece: null,
     pose: {
         points: {},
@@ -408,11 +455,28 @@ function getActiveEvent() {
 
 function buildSongSelect() {
     elements.songSelect.innerHTML = "";
+
+    // Real songs first
+    const songGroup = document.createElement("optgroup");
+    songGroup.label = "Songs";
+    const practiceGroup = document.createElement("optgroup");
+    practiceGroup.label = "Practice";
+
     Object.entries(SONG_LIBRARY).forEach(([id, song]) => {
         const opt = document.createElement("option");
-        opt.value = id; opt.textContent = song.title;
-        elements.songSelect.appendChild(opt);
+        opt.value = id;
+        opt.textContent = song.spotifyId
+            ? `${song.title} — ${song.composer}`
+            : song.title;
+        if (song.spotifyId) {
+            songGroup.appendChild(opt);
+        } else {
+            practiceGroup.appendChild(opt);
+        }
     });
+
+    elements.songSelect.appendChild(songGroup);
+    elements.songSelect.appendChild(practiceGroup);
 }
 
 function setTransportBeat(b) {
@@ -426,6 +490,19 @@ function applySong(songId) {
     elements.songSelect.value = songId;
     resetPerformanceState();
     buildRail();
+
+    // Auto-load Spotify for real songs
+    const song = SONG_LIBRARY[songId];
+    if (song.spotifyId) {
+        elements.spotifyPlayer.innerHTML =
+            `<iframe src="https://open.spotify.com/embed/track/${song.spotifyId}?utm_source=generator&theme=0" ` +
+            `width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" ` +
+            `loading="lazy"></iframe>`;
+        elements.spotifyDock.classList.remove("hidden");
+    } else {
+        elements.spotifyPlayer.innerHTML = "";
+        elements.spotifyDock.classList.add("hidden");
+    }
 }
 
 function resetPerformanceState() {
@@ -482,6 +559,11 @@ function updateRail() {
 // ─── Camera & Pose ──────────────────────────────────────────
 
 async function setupCamera() {
+    // If camera was already opened during calibration, skip
+    if (state.stream && elements.video.srcObject) {
+        syncOverlay();
+        return;
+    }
     state.stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false
@@ -946,6 +1028,161 @@ function resetLoop(now = performance.now()) {
     state.lastBeatTick = -1;
 }
 
+// ─── Setup & Calibration ───────────────────────────────────
+
+function loadSavedPositions() {
+    try {
+        const saved = localStorage.getItem("drumPositions");
+        if (saved) {
+            const positions = JSON.parse(saved);
+            positions.forEach(pos => {
+                const pad = DRUM_KIT.find(d => d.name === pos.name);
+                if (pad) { pad.x = pos.x; pad.y = pos.y; }
+            });
+            return true;
+        }
+    } catch (e) { /* ignore */ }
+    return false;
+}
+
+function savePositions() {
+    const positions = DRUM_KIT.map(d => ({ name: d.name, x: d.x, y: d.y }));
+    localStorage.setItem("drumPositions", JSON.stringify(positions));
+}
+
+function hideSetupModal() {
+    elements.setupModal.classList.add("hidden");
+    elements.bootButton.classList.remove("hidden");
+    elements.resetSetupBtn.classList.remove("hidden");
+}
+
+function showSetupModal() {
+    // Stop playback and reset state
+    cancelCountdown();
+    state.isPlaying = false;
+    state.booted = false;
+    state.booting = false;
+
+    // Stop camera if running
+    if (state.stream) {
+        state.stream.getTracks().forEach(t => t.stop());
+        state.stream = null;
+        elements.video.srcObject = null;
+    }
+    state.poseAvailable = false;
+    state.poseLoopActive = false;
+
+    // Reset drum positions to defaults
+    DEFAULT_KIT_POSITIONS.forEach(def => {
+        const pad = DRUM_KIT.find(d => d.name === def.name);
+        if (pad) { pad.x = def.x; pad.y = def.y; }
+    });
+    localStorage.removeItem("drumPositions");
+
+    // Show modal, hide everything else
+    elements.setupModal.classList.remove("hidden");
+    elements.bootButton.classList.add("hidden");
+    elements.resetSetupBtn.classList.add("hidden");
+    elements.bootButton.disabled = false;
+    elements.cameraStatus.textContent = "Press Start once to allow camera and sound.";
+}
+
+async function startCalibration() {
+    // First open camera so user can see their kit
+    elements.setupModal.classList.add("hidden");
+    elements.cameraStatus.textContent = "Opening camera for calibration...";
+
+    try {
+        state.stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false
+        });
+        elements.video.srcObject = state.stream;
+        await new Promise((resolve) => {
+            elements.video.onloadedmetadata = () => { elements.video.play(); syncOverlay(); resolve(); };
+        });
+    } catch (e) {
+        elements.cameraStatus.textContent = "Camera unavailable. Using default positions.";
+        hideSetupModal();
+        elements.bootButton.classList.remove("hidden");
+        return;
+    }
+
+    elements.cameraStatus.textContent = "";
+    elements.calibrationOverlay.classList.remove("hidden");
+
+    // Create draggable pads
+    const container = elements.calibrationOverlay;
+    const cw = window.innerWidth;
+    const ch = window.innerHeight;
+
+    DRUM_KIT.forEach(pad => {
+        const el = document.createElement("div");
+        el.className = "calibration-pad";
+        el.dataset.drum = pad.name;
+        const r = pad.radius * Math.min(cw, ch);
+        el.style.width = `${r * 2}px`;
+        el.style.height = `${r * 2}px`;
+        el.style.borderColor = pad.color;
+        el.style.background = `${pad.color}22`;
+        el.style.left = `${pad.x * cw - r}px`;
+        el.style.top = `${pad.y * ch - r}px`;
+        el.innerHTML = `<span class="cal-label" style="color:${pad.color}">${pad.label}</span>`;
+
+        // Drag handling
+        let dragging = false, offsetX = 0, offsetY = 0;
+
+        const onStart = (ex, ey) => {
+            dragging = true;
+            const rect = el.getBoundingClientRect();
+            offsetX = ex - rect.left;
+            offsetY = ey - rect.top;
+            el.style.boxShadow = `0 0 20px ${pad.color}66`;
+        };
+
+        const onMove = (ex, ey) => {
+            if (!dragging) return;
+            el.style.left = `${ex - offsetX}px`;
+            el.style.top = `${ey - offsetY}px`;
+        };
+
+        const onEnd = () => {
+            if (!dragging) return;
+            dragging = false;
+            el.style.boxShadow = "";
+            const rect = el.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            pad.x = cx / window.innerWidth;
+            pad.y = cy / window.innerHeight;
+        };
+
+        el.addEventListener("mousedown", (e) => { e.preventDefault(); onStart(e.clientX, e.clientY); });
+        window.addEventListener("mousemove", (e) => onMove(e.clientX, e.clientY));
+        window.addEventListener("mouseup", onEnd);
+
+        el.addEventListener("touchstart", (e) => { e.preventDefault(); const t = e.touches[0]; onStart(t.clientX, t.clientY); }, { passive: false });
+        window.addEventListener("touchmove", (e) => { if (dragging) { const t = e.touches[0]; onMove(t.clientX, t.clientY); } });
+        window.addEventListener("touchend", onEnd);
+
+        container.appendChild(el);
+    });
+}
+
+function finishCalibration() {
+    // Remove draggable pads
+    elements.calibrationOverlay.querySelectorAll(".calibration-pad").forEach(el => el.remove());
+    elements.calibrationOverlay.classList.add("hidden");
+
+    // Update color/label maps
+    DRUM_KIT.forEach(d => { DRUM_COLORS[d.name] = d.color; DRUM_LABELS[d.name] = d.label; });
+
+    savePositions();
+    elements.bootButton.classList.remove("hidden");
+    // Camera is already open, state.stream is set — boot() will reuse it
+}
+
+
 // ─── Boot ───────────────────────────────────────────────────
 
 async function boot() {
@@ -1023,12 +1260,39 @@ function attachEvents() {
         if (state.booted) startPlayback();
     });
     window.addEventListener("resize", syncOverlay);
+
+    // Setup modal buttons
+    elements.setupNo.addEventListener("click", () => {
+        hideSetupModal();
+    });
+    elements.setupYes.addEventListener("click", () => {
+        startCalibration();
+    });
+    elements.calibrationDone.addEventListener("click", () => {
+        finishCalibration();
+    });
+    elements.resetSetupBtn.addEventListener("click", () => {
+        showSetupModal();
+    });
+
+    // Spotify close — just hides, song change will re-show
+    elements.spotifyClose.addEventListener("click", () => {
+        elements.spotifyDock.classList.add("hidden");
+    });
 }
 
 function init() {
+    // Load saved drum positions if any
+    const hasSaved = loadSavedPositions();
+
     buildSongSelect();
     applySong(state.selectedSongId);
     attachEvents();
+
+    // If positions were previously saved, skip setup and go straight to Start
+    if (hasSaved) {
+        hideSetupModal();
+    }
 }
 
 init();
